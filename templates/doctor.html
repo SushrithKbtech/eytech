@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Portal</title>
+</head>
+<body>
+    <h1>Doctor Portal</h1>
+    <h3>Doctor ID: {{ doctor_id }}</h3>
+    <ul id="patientList">
+        {% for patient in patients %}
+        <li>
+            <span>{{ patient }}</span>
+            <a href="/call/{{ doctor_id }}_{{ patient }}">Join Call with {{ patient }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

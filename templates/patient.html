@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Portal</title>
+</head>
+<body>
+    <h1>Patient Portal</h1>
+    <h3>Patient Name: {{ patient_name }}</h3>
+    <h3>Doctor ID: {{ doctor_id }}</h3>
+    <a href="/call/{{ doctor_id }}_{{ patient_name }}">Join Call with {{ doctor_id }}</a>
+</body>
+</html>

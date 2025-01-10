@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Call</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>Video Call</h1>
+    <div class="video-container">
+        <video id="localVideo" autoplay muted></video>
+        <video id="remoteVideo" autoplay></video>
+    </div>
+    <div class="controls">
+        <button id="toggleMic">🎤 Mute</button>
+        <button id="toggleVideo">📷 Video Off</button>
+        <button id="shareScreen">📺 Share Screen</button>
+        <button id="chatToggle">💬 Chat</button>
+        <button id="endCall" class="end-call">❌ End Call</button>
+    </div>
+    <div id="chatbox" class="hidden">
+        <div id="chatMessages"></div>
+        <input type="text" id="chatInput" placeholder="Type a message...">
+        <button id="sendChat">Send</button>
+    </div>
+
+    <script>
+        const socket = io();
+        const room = "{{ room }}";
+        const localVideo = document.getElementById("localVideo");
+        const remoteVideo = document.getElementById("remoteVideo");
+        const toggleMic = document.getElementById("toggleMic");
+        const toggleVideo = document.getElementById("toggleVideo");
+        const shareScreen = document.getElementById("shareScreen");
+        const chatToggle = document.getElementById("chatToggle");
+        const endCall = document.getElementById("endCall");
+        const chatbox = document.getElementById("chatbox");
+        const chatMessages = document.getElementById("chatMessages");
+        const chatInput = document.getElementById("chatInput");
+        const sendChat = document.getElementById("sendChat");
+
+        let localStream;
+        let peerConnection;
+        let micEnabled = true;
+        let videoEnabled = true;
+
+        const configuration = {
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        };
+
+        // Join the room
+        socket.emit("join_room", { room, user: room });
+
+        // Access the camera and microphone
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
+            localStream = stream;
+            localVideo.srcObject = stream;
+
+            peerConnection = new RTCPeerConnection(configuration);
+
+            // Add tracks to the peer connection
+            localStream.getTracks().forEach((track) => peerConnection.addTrack(track, localStream));
+
+            // Listen for ICE candidates
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit("signal", { room, candidate: event.candidate });
+                }
+            };
+
+            // Listen for remote tracks
+            peerConnection.ontrack = (event) => {
+                remoteVideo.srcObject = event.streams[0];
+            };
+
+            // Handle incoming signals
+            socket.on("signal", (data) => {
+                if (data.sdp) {
+                    peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                    if (data.sdp.type === "offer") {
+                        peerConnection.createAnswer().then((answer) => {
+                            peerConnection.setLocalDescription(answer);
+                            socket.emit("signal", { room, sdp: answer });
+                        });
+                    }
+                } else if (data.candidate) {
+                    peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                }
+            });
+
+            // Create an offer to connect
+            peerConnection.createOffer().then((offer) => {
+                peerConnection.setLocalDescription(offer);
+                socket.emit("signal", { room, sdp: offer });
+            });
+        });
+
+        // Toggle Mic
+        toggleMic.addEventListener("click", () => {
+            micEnabled = !micEnabled;
+            localStream.getAudioTracks()[0].enabled = micEnabled;
+            toggleMic.textContent = micEnabled ? "🎤 Mute" : "🎤 Unmute";
+        });
+
+        // Toggle Video
+        toggleVideo.addEventListener("click", () => {
+            videoEnabled = !videoEnabled;
+            localStream.getVideoTracks()[0].enabled = videoEnabled;
+            toggleVideo.textContent = videoEnabled ? "📷 Video Off" : "📷 Video On";
+        });
+
+        // Share Screen
+        shareScreen.addEventListener("click", () => {
+            navigator.mediaDevices.getDisplayMedia({ video: true }).then((stream) => {
+                const screenTrack = stream.getTracks()[0];
+                peerConnection.getSenders().find((sender) => sender.track.kind === "video").replaceTrack(screenTrack);
+                screenTrack.onended = () => {
+                    peerConnection.getSenders().find((sender) => sender.track.kind === "video").replaceTrack(localStream.getVideoTracks()[0]);
+                };
+            });
+        });
+
+        // Toggle Chat
+        chatToggle.addEventListener("click", () => {
+            chatbox.classList.toggle("hidden");
+        });
+
+        // End Call
+        endCall.addEventListener("click", () => {
+            peerConnection.close();
+            window.location.href = "/";
+        });
+
+        // Chat Functionality
+        sendChat.addEventListener("click", () => {
+            const message = chatInput.value;
+            if (message) {
+                socket.emit("chat_message", { room, message });
+                chatMessages.innerHTML += `<div class="message self">${message}</div>`;
+                chatInput.value = "";
+            }
+        });
+
+        socket.on("chat_message", (data) => {
+            chatMessages.innerHTML += `<div class="message other">${data.message}</div>`;
+        });
+    </script>
+</body>
+</html>

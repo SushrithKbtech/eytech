@@ -1,0 +1,77 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+.video-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+video {
+    width: 45%;
+    margin: 0 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+}
+
+.controls {
+    margin-top: 20px;
+}
+
+.controls button {
+    padding: 10px 20px;
+    margin: 5px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.controls .end-call {
+    background-color: red;
+    color: white;
+}
+
+#chatbox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    width: 300px;
+    margin: 0 auto;
+}
+
+#chatbox.hidden {
+    display: none;
+}
+
+#chatMessages {
+    height: 200px;
+    overflow-y: auto;
+    width: 100%;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 10px;
+}
+
+#chatMessages .message {
+    padding: 5px;
+}
+
+#chatMessages .message.self {
+    text-align: right;
+    color: blue;
+}
+
+#chatMessages .message.other {
+    text-align: left;
+    color: green;
+}
+
+#chatInput {
+    width: 80%;
+    padding: 5px;
+}
